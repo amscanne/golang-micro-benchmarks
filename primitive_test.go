@@ -5,37 +5,37 @@ import (
 )
 
 type Opaque struct {
-    val int
+	val int
 }
 
 func (o Opaque) Add(other Opaque) Opaque {
-    return Opaque{o.val + other.val}
+	return Opaque{o.val + other.val}
 }
 
 func (o *Opaque) AddPtr(other *Opaque) Opaque {
-    return Opaque{o.val + other.val}
+	return Opaque{o.val + other.val}
 }
 
 func BenchmarkStructOpByValue(b *testing.B) {
-        c := Opaque{0}
-        inc := Opaque{1}
+	c := Opaque{0}
+	inc := Opaque{1}
 	for i := 0; i < b.N; i++ {
-            c = c.Add(inc)
-        }
+		c = c.Add(inc)
+	}
 }
 
 func BenchmarkStructOpByPtr(b *testing.B) {
-        c := Opaque{0}
-        inc := &Opaque{1}
+	c := Opaque{0}
+	inc := &Opaque{1}
 	for i := 0; i < b.N; i++ {
-            c = c.AddPtr(inc)
-        }
+		c = c.AddPtr(inc)
+	}
 }
 
 func BenchmarkPrimtiveOp(b *testing.B) {
-        c := 0
-        inc := 1
-	for i := 0; i < b.N; i++ {    
-            c = c + inc
-        }
+	c := 0
+	inc := 1
+	for i := 0; i < b.N; i++ {
+		c = c + inc
+	}
 }

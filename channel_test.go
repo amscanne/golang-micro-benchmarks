@@ -4,42 +4,77 @@ import (
 	"testing"
 )
 
-const ChannelBuffer = (64 * 1024)
-
-func produce(x chan int, count int) {
-	for count > 0 {
-		x <- count
-		count--
+func produce(x chan struct{}, count int) {
+	for i := 0; i < count; i++ {
+		x <- struct{}{}
 	}
 }
 
-func consume(x chan int, d chan struct{}, count int) {
-	for count > 0 {
+func produceNonBlocking(x chan struct{}, count int) {
+	for i := 0; i < count; i++ {
+		select {
+		case x <- struct{}{}:
+		default:
+		}
+	}
+}
+
+func consume(x chan struct{}, count int) {
+	for i := 0; i < count; i++ {
 		<-x
-		count--
 	}
-	var notice struct{}
-	d <- notice
 }
 
-func BenchmarkChannel(b *testing.B) {
-	x := make(chan int, ChannelBuffer)
-	d := make(chan struct{})
-	go produce(x, b.N)
-	go consume(x, d, b.N)
-	<-d
+func consumeNonBlocking(x chan struct{}, count int) {
+	for i := 0; i < count; i++ {
+		select {
+		case <-x:
+		default:
+		}
+	}
 }
 
-func BenchmarkMultiChannel(b *testing.B) {
-	x := make(chan int, ChannelBuffer)
-	d := make(chan struct{})
-	for i := 0; i < 10; i++ {
-		go produce(x, b.N/10)
-	}
-	for i := 0; i < 10; i++ {
-		go consume(x, d, b.N/10)
-	}
-	for i := 0; i < 10; i++ {
-		<-d
-	}
+func BenchmarkChannelReceive(b *testing.B) {
+	b.StopTimer()
+	d := make(chan struct{}, b.N)
+	produce(d, b.N)
+	b.StartTimer()
+	consume(d, b.N)
+}
+
+func BenchmarkChannelSend(b *testing.B) {
+	b.StopTimer()
+	d := make(chan struct{}, b.N)
+	b.StartTimer()
+	produce(d, b.N)
+}
+
+func BenchmarkChannelNonBlockingReceive(b *testing.B) {
+	b.StopTimer()
+	d := make(chan struct{}, b.N)
+	produce(d, b.N)
+	b.StartTimer()
+	consumeNonBlocking(d, b.N)
+}
+
+func BenchmarkChannelNonBlockingReceiveEmpty(b *testing.B) {
+	b.StopTimer()
+	d := make(chan struct{}, b.N)
+	b.StartTimer()
+	consumeNonBlocking(d, b.N)
+}
+
+func BenchmarkChannelNonBlockingSend(b *testing.B) {
+	b.StopTimer()
+	d := make(chan struct{}, b.N)
+	b.StartTimer()
+	produceNonBlocking(d, b.N)
+}
+
+func BenchmarkChannelNonBlockingSendFull(b *testing.B) {
+	b.StopTimer()
+	d := make(chan struct{}, b.N)
+	produce(d, b.N)
+	b.StartTimer()
+	produceNonBlocking(d, b.N)
 }

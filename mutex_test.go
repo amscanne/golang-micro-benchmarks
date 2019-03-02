@@ -5,30 +5,26 @@ import (
 	"testing"
 )
 
-func lock(mutex *sync.Mutex, count int, d chan struct{}) {
-	for count > 0 {
-		mutex.Lock()
-		count--
-		mutex.Unlock()
+func BenchmarkMutexLock(b *testing.B) {
+	var m sync.Mutex
+	for i := 0; i < b.N; i++ {
+		m.Lock()
+		m.Unlock()
 	}
-	var notice struct{}
-	d <- notice
 }
 
-func BenchmarkLock(b *testing.B) {
-	m := &sync.Mutex{}
-	d := make(chan struct{})
-	go lock(m, b.N, d)
-	<-d
+func BenchmarkRWMutexLock(b *testing.B) {
+	var m sync.RWMutex
+	for i := 0; i < b.N; i++ {
+		m.Lock()
+		m.Unlock()
+	}
 }
 
-func BenchmarkMultiLock(b *testing.B) {
-	m := &sync.Mutex{}
-	d := make(chan struct{})
-	for i := 0; i < 10; i++ {
-		go lock(m, b.N/10, d)
-	}
-	for i := 0; i < 10; i++ {
-		<-d
+func BenchmarkRWMutexRLock(b *testing.B) {
+	var m sync.RWMutex
+	for i := 0; i < b.N; i++ {
+		m.RLock()
+		m.RUnlock()
 	}
 }
